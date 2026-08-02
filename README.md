@@ -1,4 +1,6 @@
-# 📡 TELCO USER ANALYTICS — DUE DILIGENCE ANALYSIS
+# 📡 TELCO USER ANALYTICS
+
+### *A Data-Driven Due-Diligence Analysis of TellCo for Acquisition Decision-Making*
 
 ![Python](https://img.shields.io/badge/Language-Python%203.10+-blue)
 ![Notebook](https://img.shields.io/badge/Environment-Jupyter%20Notebook-orange)
