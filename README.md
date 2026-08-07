@@ -362,7 +362,7 @@ Rather than treating each of the four analytical pillars in isolation, the noteb
 
 **Yousuf S. R. Sakkaf**
 
-**GitHub:** https://github.com/S-Yousuf-S
+**GitHub:** [https://github.com/S-Yousuf-S](https://github.com/S-Yousuf-S?tab=repositories)
 
 ---
 
