@@ -54,10 +54,9 @@ The analysis is driven by one central business question:
 - Identify the applications and handsets that dominate network traffic.
 - Segment customers into meaningful engagement and network-experience clusters.
 - Quantify customer satisfaction and validate it against a predictive model, with an honest account of that validation's limits.
-- Export the final customer-level scoring table to a local SQL Server database.
-- Deliver a clear, data-backed recommendation on whether TellCo represents a sound acquisition — and if so, what the investor's first move should be.
 - Export the final customer-level scoring table to CSV, then import it into a local SQL Server database via a companion notebook.
-  
+- Deliver a clear, data-backed recommendation on whether TellCo represents a sound acquisition — and if so, what the investor's first move should be.
+
 ---
 
 ## ❓ Key Business Questions
