@@ -23,7 +23,7 @@ Rather than treating each of the four analytical pillars (Overview, Engagement, 
 <p align="center">
   <img src="./Assets/hero_image_dashboard.png" width="100%" alt="TellCo User Analytics Dashboard"/>
 </p>
-<p align="center"><i>XGBoost vs. Linear Regression on Satisfaction Score prediction — the final modeling step before the acquisition recommendation.</i></p>
+<p align="center"><i>The case for purchase, in twelve numbers — customer scale, network experience findings, and the final recommendation.</i></p>
 
 ---
 
@@ -56,7 +56,8 @@ The analysis is driven by one central business question:
 - Quantify customer satisfaction and validate it against a predictive model, with an honest account of that validation's limits.
 - Export the final customer-level scoring table to a local SQL Server database.
 - Deliver a clear, data-backed recommendation on whether TellCo represents a sound acquisition — and if so, what the investor's first move should be.
-
+- Export the final customer-level scoring table to CSV, then import it into a local SQL Server database via a companion notebook.
+  
 ---
 
 ## ❓ Key Business Questions
@@ -84,13 +85,15 @@ The notebook follows fifteen sections, each building on the last — from raw re
 | **06. User Engagement — *Finding TellCo's Power Users*** | Aggregate engagement metrics per customer, K-Means (k=3) segmentation, per-application traffic breakdown, and an elbow/silhouette check against the fixed k. |
 | **07. User Experience — *Is TellCo's Network Actually Good?*** | Build network-quality metrics per customer (TCP retransmission, RTT, throughput), detect and treat outliers using real skew/kurtosis/IQR evidence, profile experience by handset type, and cluster customers into experience tiers. |
 | **08. User Satisfaction Analysis** | Score every customer's Engagement and Experience distance from the "worst" cluster, combine into a Satisfaction Score, compare two regression models (Linear Regression baseline vs. XGBoost) to predict it, and segment customers into satisfaction tiers (k=2). |
-| **09. Data Export to SQL** | Export the final customer-level scoring table to a local SQL Server database via Windows Authentication. |
+| **09. Final Table Export to CSV** | Export the final customer-level scoring table (`MSISDN/Number`, Engagement Score, Experience Score, Satisfaction Score) to `Assets/user_satisfaction_scores.csv` — the handoff point to a separate SQL import notebook. |
 | **10. Executive Summary** | Synthesize findings across all four analytical pillars. |
 | **11. Business Recommendation** | Translate findings into a specific, actionable growth-investment recommendation. |
 | **12. Limitations** | Honest account of what this analysis cannot determine — sampling bias, an unresolved device-identity question, and a modeling circularity caveat. |
 | **13. Challenges & Key Learnings** | The real debugging and design-decision journey behind the final notebook. |
 | **14. Conclusion** | Final purchase recommendation, and confirmation against the project's original expected outcomes. |
 | **15. Future Scope** | Items explicitly descoped from the original brief, and natural next steps. |
+
+> This workflow spans two notebooks — see **SQL Export & Import** below for why, and **Installation & Setup** for the run order.
 
 ---
 
@@ -138,8 +141,8 @@ A full univariate → bivariate → multivariate EDA pipeline, matching the dept
 - K-Means (k=3, per the brief) finds three comparably-sized clusters (36,631 / 40,236 / 29,604 customers) — no single dominant "power user" segment.
 - Engagement genuinely has two independent dimensions: one cluster is time-engaged (longest session duration), a separate cluster is traffic-intensity heavy (highest volume per session) — these are not the same customers.
 - Once the ambiguous `Other` traffic category is excluded, **Gaming drives roughly 19–20x more traffic than Netflix or YouTube**, which are themselves nearly tied.
-- An elbow/silhouette check found k=4 as the data's natural optimum alongside the brief's required k=3 — reported transparently as a discrepancy, not acted on.
-
+- An elbow/silhouette check found **k=4 as the data-specified optimum**, alongside the **task-specified k=3** — reported transparently as a discrepancy, not acted on for the actual clustering used.
+  
 ---
 
 ## 🌐 User Experience: Is TellCo's Network Actually Good?
@@ -149,7 +152,7 @@ Outlier detection here was evidence-first: skewness, kurtosis, and IQR/Z-score o
 **Key findings:**
 - **73.6% of customers** show minimal network friction — though this likely reflects light, often single-session usage more than confirmed superior network treatment.
 - A smaller segment (**10.8% of customers**) pushing the heaviest uplink traffic shows simultaneously the highest TCP retransmission and worst uplink latency — a real, concentrated reliability concern, not a network-wide failure.
-- An elbow check found k=3 as the data's natural optimum for a k=3-specified clustering — the one section where the fixed k and the data-driven signal agreed.
+- An elbow check found **k=2 as the data-specified optimum**, diverging from the **task-specified k=3** — reported transparently, not acted on for the actual clustering used.
 
 ---
 
@@ -162,14 +165,18 @@ Engagement and Experience Scores are computed as each customer's Euclidean dista
 - **72.7% of customers** engage at a comparable or even slightly higher rate than the more-satisfied minority, yet land in the lower-satisfaction segment purely due to worse network experience.
 - Two regression models were compared to predict Satisfaction Score — **Linear Regression (R² = 0.7902, CV R² = 0.7909)** as a genuine baseline, and **XGBoost (R² = 0.9934, CV R² = 0.9935)** as the stronger, final model. Both models' near-identical R²/CV R² rule out overfitting.
 - **Important caveat, stated plainly rather than hidden:** Satisfaction Score is a deterministic formula built from the same features used to predict it — these results measure how well each model reconstructs a known formula, not a fully independent prediction of unseen customer behavior.
-
+- An elbow check found **k=3 as the data-specified optimum**, diverging from the **task-specified k=2** — reported transparently, not acted on for the actual clustering used.
+  
 ---
 
-## 🗄️ SQL Export
+## 🗄️ SQL Export & Import
 
-The final table (`MSISDN/Number`, Engagement Score, Experience Score, Satisfaction Score) is exported to a local SQL Server Express database (`TelecomDB`) via Windows Authentication, using `sqlalchemy` and `pyodbc`. Column names are cleaned for SQL compatibility (spaces and `/` replaced with underscores) on the exported copy only — the original `user_satisfaction` DataFrame, used throughout this notebook's analysis, is left unchanged.
+This step spans two notebooks, for a specific reason: SQL Server access requires Windows Authentication, which only works when code runs on the same physical machine as the SQL Server instance — incompatible with Google Colab, where the rest of this project is designed to run.
 
-> **Note:** This section must be run locally, not in Google Colab. Windows Authentication requires the notebook to execute on the same machine as the SQL Server Express instance.
+- **`telecom_user_analytics_final.ipynb` (Section 09)** — exports the final table (`MSISDN/Number`, Engagement Score, Experience Score, Satisfaction Score) to `Assets/user_satisfaction_scores.csv`. Runs anywhere, including Colab.
+- **`telecom_SQL_Import.ipynb`** — a separate, standalone notebook that reads that CSV and imports it into a local SQL Server Express database (`TelecomDB`) via Windows Authentication. Must be run locally.
+
+Column names are cleaned for SQL compatibility (spaces and `/` replaced with underscores) on the imported copy only — the original `user_satisfaction` DataFrame in the main notebook keeps its original column names throughout.
 
 ---
 
@@ -191,9 +198,12 @@ NHIS_Project5/
 ├── Assets/
 │   ├── telcom_data.csv                          # Source xDR dataset
 │   ├── Field_Descriptions.csv                   # Column dictionary
+│   ├── user_satisfaction_scores.csv             # Final scoring table — handoff to SQL Import notebook
+│   ├── hero_image_dashboard.png                 # README hero image
 │   └── [chart PNGs generated throughout the notebook]
 │
-├── telecom_user_analytics_final.ipynb           # Complete end-to-end notebook
+├── telecom_user_analytics_final.ipynb           # Complete end-to-end analysis notebook (Sections 01–15)
+├── telecom_SQL_Import.ipynb                     # Standalone notebook: imports the final CSV into SQL Server
 ├── TellCo_User_Analytics_Presentation_YS.pptx   # Project presentation
 ├── requirements.txt                             # Project dependencies
 └── README.md                                    # Project documentation
@@ -244,63 +254,51 @@ SQLAlchemy==2.0.51
 ### Prerequisites
 
 - Python **3.10** or above
-- For the SQL Export section only: SQL Server Express (local instance), SSMS, and the ODBC Driver 18 for SQL Server (installed separately from the Python packages — see the SQL Export section's setup notes in the notebook)
+- For `telecom_SQL_Import.ipynb` only: SQL Server Express (local instance), SSMS, and the ODBC Driver 18 for SQL Server (installed separately from the Python packages — see that notebook's setup notes)
 
 ---
 
-### Option 1 — Google Colab *(Recommended for Sections 01–08)*
+### Step 1 — Run the Main Analysis Notebook
+
+#### Option A — Google Colab *(Recommended)*
 
 1. Upload `telecom_user_analytics_final.ipynb` to your Google Colab session.
 2. If the dataset is not available locally, the notebook automatically downloads `telcom_data.csv` from GitHub.
-3. Run the notebook sequentially from top to bottom.
-4. **Section 09 (SQL Export) will not run in Colab** — see Option 2 for this section specifically.
+3. Run sequentially from top to bottom. Section 09 exports `user_satisfaction_scores.csv` to `Assets/`.
 
----
-
-### Option 2 — Local Virtual Environment *(Required for Section 09)*
-
-#### 1. Clone the repository
+#### Option B — Local Virtual Environment
 
 ```bash
 git clone https://github.com/S-Yousuf-S/NHIS_Project5.git
 cd NHIS_Project5
-```
-
-#### 2. Create a virtual environment
-
-```bash
 python -m venv TELECOM_ENV
 ```
 
-#### 3. Activate the environment
-
-**Windows**
-
-```bash
-TELECOM_ENV\Scripts\activate
-```
-
-**macOS / Linux**
-
-```bash
-source TELECOM_ENV/bin/activate
-```
-
-#### 4. Install the required libraries
+**Windows:** `TELECOM_ENV\Scripts\activate`
+**macOS / Linux:** `source TELECOM_ENV/bin/activate`
 
 ```bash
 pip install -r requirements.txt
-```
-
-#### 5. Launch Jupyter Notebook
-
-```bash
 jupyter notebook telecom_user_analytics_final.ipynb
 ```
 
-> **Note:**
->
-> Run the notebook sequentially from the first cell to the last to reproduce the complete workflow. Section 09 (SQL Export) additionally requires SQL Server Express running locally, with TCP/IP enabled via SQL Server Configuration Manager and the SQL Server Browser service running (see the notebook's SQL Export section for full setup notes).
+Run sequentially from the first cell to the last. Section 09 exports `user_satisfaction_scores.csv` to `Assets/`.
+
+---
+
+### Step 2 — Run the SQL Import Notebook *(Local Only, Required)*
+
+`telecom_SQL_Import.ipynb` cannot run in Colab — Windows Authentication requires execution on the same machine as SQL Server Express.
+
+1. Confirm `user_satisfaction_scores.csv` exists in `Assets/` (produced by Step 1).
+2. Confirm SQL Server Express is running locally, with TCP/IP enabled via SQL Server Configuration Manager and the SQL Server Browser service running.
+3. Using the same local virtual environment from Step 1 (Option B):
+
+```bash
+jupyter notebook telecom_SQL_Import.ipynb
+```
+
+Run sequentially — this creates the `TelecomDB` database (if it doesn't already exist) and imports the final scoring table.
 
 ---
 
@@ -324,15 +322,15 @@ jupyter notebook telecom_user_analytics_final.ipynb
 
 **Q: Is the XGBoost R² = 0.9934 result a fully independent prediction of customer satisfaction?**
 
-**A:** No, and this is stated explicitly rather than glossed over. Satisfaction Score is a deterministic formula built directly from the same underlying features used as regression predictors — a sufficiently flexible model can reconstruct it closely almost regardless of algorithm choice. This result measures formula-reconstruction accuracy, not independent behavioral prediction; see Limitations for the full discussion.
+**A:** No, and this is stated explicitly rather than glossed over. Satisfaction Score is a deterministic formula built directly from the same underlying features used as regression predictors — a sufficiently flexible model can reconstruct it closely almost regardless of algorithm choice. This result measures formula-reconstruction accuracy, not independent behavioural prediction; see Limitations for the full discussion.
 
-**Q: Why does the SQL Export section explicitly say it must be run locally?**
+**Q: Why is SQL import a separate notebook, and why must it run locally?**
 
-**A:** The export uses Windows Authentication (`trusted_connection=yes`), which requires the code to execute on the same physical machine as the SQL Server Express instance. Google Colab runs on a cloud VM with no network path to a local machine's SQL Server — this is a hard constraint, not a configuration option.
+**A:** SQL Server access uses Windows Authentication (`trusted_connection=yes`), which requires the code to execute on the same physical machine as the SQL Server Express instance — incompatible with Google Colab's cloud runtime, where the rest of this project is designed to run. Splitting SQL import into its own notebook keeps the main analysis notebook fully Colab-compatible, while isolating the one genuinely environment-dependent step into a small, standalone file.
 
 **Q: 73.6% of customers show the "best" network experience, and one cluster shows the lowest engagement friction too — does that mean most customers are genuinely well-served?**
 
-**A:** Partially, and this is deliberately not overstated in the notebook. 72.74% of all customers have exactly one recorded session — for these customers, every "average" metric is really just one raw reading, not genuine behavior measured over time. A single light session naturally produces low retransmission counts and low RTT variance, independent of true network quality. This is stated as a limitation, not silently assumed away — the "well-served majority" finding is likely real, but its strength is probably somewhat overstated by this sampling artifact.
+**A:** Partially, and this is deliberately not overstated in the notebook. 72.74% of all customers have exactly one recorded session — for these customers, every "average" metric is really just one raw reading, not genuine behaviour measured over time. A single light session naturally produces low retransmission counts and low RTT variance, independent of true network quality. This is stated as a limitation, not silently assumed away — the "well-served majority" finding is likely real, but its strength is probably somewhat overstated by this sampling artifact.
 
 **Q: Is the Huawei B528S-23A really a shared router rather than a personal handset?**
 
@@ -342,7 +340,7 @@ jupyter notebook telecom_user_analytics_final.ipynb
 
 ## 📌 Conclusion
 
-This project demonstrates a complete due-diligence analytical workflow — from raw xDR record cleaning through customer segmentation, network diagnostics, satisfaction modeling, and SQL export, closing with a specific, evidence-backed acquisition recommendation.
+This project demonstrates a complete due-diligence analytical workflow — from raw xDR record cleaning through customer segmentation, network diagnostics, satisfaction modelling, and SQL export, closing with a specific, evidence-backed acquisition recommendation.
 
 Rather than treating each of the four analytical pillars in isolation, the notebook connects them into one throughline: TellCo's customer base is broad and reasonably well-served on average, but network experience — not customer engagement or interest — is the single clearest lever separating satisfied customers from dissatisfied ones, concentrated in a specific, identifiable minority rather than spread evenly across the base.
 
