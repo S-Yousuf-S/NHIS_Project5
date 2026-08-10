@@ -162,7 +162,7 @@ Engagement and Experience Scores are computed as each customer's Euclidean dista
 **Key findings:**
 - The two satisfaction clusters (k=2, per the brief) are **nearly identical on Engagement Score** (0.383 vs. 0.430) but **sharply divided on Experience Score** (0.771 vs. 0.183) — satisfaction here is overwhelmingly an experience story, not an engagement one.
 - **72.7% of customers** engage at a comparable or even slightly higher rate than the more-satisfied minority, yet land in the lower-satisfaction segment purely due to worse network experience.
-- Two regression models were compared to predict Satisfaction Score — **Linear Regression (R² = 0.7902, CV R² = 0.7909)** as a genuine baseline, and **XGBoost (R² = 0.9934, CV R² = 0.9935)** as the stronger, final model. Both models' near-identical R²/CV R² rule out overfitting.
+- Two regression models were compared to predict Satisfaction Score — **Linear Regression (R² = 0.7902, CV R² = 0.7909)** as a genuine baseline, and **XGBoost (R² = 0.9937, CV R² = 0.9936)** as the stronger, final model. Both models' near-identical R²/CV R² rule out overfitting.
 - **Important caveat, stated plainly rather than hidden:** Satisfaction Score is a deterministic formula built from the same features used to predict it — these results measure how well each model reconstructs a known formula, not a fully independent prediction of unseen customer behavior.
 - An elbow check found **k=3 as the data-specified optimum**, diverging from the **task-specified k=2** — reported transparently, not acted on for the actual clustering used.
   
@@ -317,9 +317,9 @@ Run sequentially — this creates the `TelecomDB` database (if it doesn't alread
 
 **Q: Why was Random Forest replaced with XGBoost for the Satisfaction Score regression?**
 
-**A:** An initial Random Forest run took over 25 minutes to train and cross-validate on 106,471 rows even with parallelization enabled, due to unconstrained tree depth. XGBoost's histogram-based split-finding achieved a stronger result (R² = 0.9934 vs. 0.98) in under 2 minutes — a substantial practical advantage at this dataset size.
+**A:** An initial Random Forest run took over 25 minutes to train and cross-validate on 106,471 rows even with parallelization enabled, due to unconstrained tree depth. XGBoost's histogram-based split-finding achieved a stronger result (CV R² = 0.9936 vs. 0.98) in under 2 minutes — a substantial practical advantage at this dataset size.
 
-**Q: Is the XGBoost R² = 0.9934 result a fully independent prediction of customer satisfaction?**
+**Q: Is the XGBoost CV R² = 0.9936 result a fully independent prediction of customer satisfaction?**
 
 **A:** No, and this is stated explicitly rather than glossed over. Satisfaction Score is a deterministic formula built directly from the same underlying features used as regression predictors — a sufficiently flexible model can reconstruct it closely almost regardless of algorithm choice. This result measures formula-reconstruction accuracy, not independent behavioural prediction; see Limitations for the full discussion.
 
