@@ -198,8 +198,7 @@ NHIS_Project5/
 │   ├── telcom_data.csv                          # Source xDR dataset
 │   ├── Field_Descriptions.csv                   # Column dictionary
 │   ├── user_satisfaction_scores.csv             # Final scoring table — handoff to SQL Import notebook
-│   ├── hero_image_dashboard.png                 # README hero image
-│   └── [chart PNGs generated throughout the notebook]
+│   └── hero_image_dashboard.png                 # README hero image
 │
 ├── telecom_user_analytics_final.ipynb           # Complete end-to-end analysis notebook (Sections 01–15)
 ├── telecom_SQL_Import.ipynb                     # Standalone notebook: imports the final CSV into SQL Server
